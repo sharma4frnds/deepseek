@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>DeepFake Message List</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            padding: 20px;
+            background: #f9f9f9;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        th,
+        td {
+            padding: 12px;
+            border: 1px solid #ddd;
+            text-align: left;
+        }
+
+        th {
+            background: #f0f0f0;
+        }
+
+        tr:hover {
+            background-color: #f5f5f5;
+        }
+
+        .pagination {
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .pagination button {
+            margin: 0 5px;
+            padding: 8px 16px;
+            border: none;
+            background: #007bff;
+            color: white;
+            cursor: pointer;
+        }
+
+        .pagination button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        #loading {
+            text-align: center;
+            margin: 20px 0;
+            font-weight: bold;
+            color: #555;
+        }
+
+        #error {
+            color: red;
+            text-align: center;
+            margin: 20px 0;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>DeepFake Messages</h1>
+
+    <div id="loading" style="display: none;">Loading...</div>
+    <div id="error" style="display: none;"></div>
+
+    <table id="messageTable">
+        <thead>
+            <tr>
+                <th>Id</th>
+                <th>Sender</th>
+                <th>Receiver</th>
+                <th>Message</th>
+                <th>Media</th>
+                <th>Media Type</th>
+                <th>Media Size</th>
+                <th>Status</th>
+                <th>Deepfake Result</th>
+                <th>Deepfake Summary</th>
+                <th>Score</th>
+                <th>Error</th>
+                <th>Created</th>
+            </tr>
+        </thead>
+        <tbody></tbody>
+    </table>
+
+    <div class="pagination">
+        <button onclick="changePage(-1)" id="prevBtn">Previous</button>
+        <span id="pageNumber">Page 1</span>
+        <button onclick="changePage(1)" id="nextBtn">Next</button>
+    </div>
+
+    <script>
+        let currentPage = 1;
+        const apiUrl = "https://52.5.204.108:7445/api/messages";
+
+        async function fetchMessages(page = 1) {
+            const loadingEl = document.getElementById("loading");
+            const errorEl = document.getElementById("error");
+            const tbody = document.querySelector("#messageTable tbody");
+
+            loadingEl.style.display = "block";
+            errorEl.style.display = "none";
+            tbody.innerHTML = "";
+
+            try {
+                const url = new URL(apiUrl);
+                url.searchParams.set("page", page);
+
+                const response = await fetch(url.toString(), {
+                    method: "GET",
+                    credentials: "omit"
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status} - ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                if (data.messages.length === 0) {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `<td colspan="12" style="text-align: center;">No messages found.</td>`;
+                    tbody.appendChild(row);
+                } else {
+                    data.messages.forEach(msg => {
+                        const row = document.createElement("tr");
+                        row.innerHTML = `
+              <td>${msg.id || "—"}</td>
+              <td>${msg.sender || "—"}</td>
+              <td>${msg.receiver || "—"}</td>
+              <td>${msg.content || "—"}</td>
+              <td>${msg.media_filename
+                                ? `<a href="${msg.media_s3_url}" target="_blank">${msg.media_filename}</a>`
+                                : "None"}</td>
+              <td>${msg.media_file_type || "-"}</td>
+              <td>${msg.media_size_bytes ? (msg.media_size_bytes / 1024).toFixed(1) + " KB" : "-"}</td>
+              <td>${msg.status || "Pending"}</td>
+              <td>${msg.deepfake_result ?? "-"}</td>
+              <td>${msg.deepfake_summary ?? "-"}</td>
+              <td>${msg.deepfake_score !== null ? msg.deepfake_score.toFixed(2) : "-"}</td>
+              <td>${msg.error_message || "-"}</td>
+              <td>${new Date(msg.createdAt).toLocaleString()}</td>
+            `;
+                        tbody.appendChild(row);
+                    });
+                }
+
+                currentPage = data.currentPage;
+                document.getElementById("pageNumber").textContent = `Page ${currentPage}`;
+                document.getElementById("prevBtn").disabled = currentPage === 1;
+                document.getElementById("nextBtn").disabled = currentPage === data.totalPages;
+
+            } catch (error) {
+                errorEl.textContent = "Failed to load messages: " + error.message;
+                errorEl.style.display = "block";
+            } finally {
+                loadingEl.style.display = "none";
+            }
+        }
+
+        function changePage(delta) {
+            fetchMessages(currentPage + delta);
+        }
+
+        // Load page 1 on start
+        fetchMessages();
+    </script>
+</body>
+
+</html>
