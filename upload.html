@@ -1,0 +1,568 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Media Upload with Drag & Drop and Progress</title>
+    <!-- Font Awesome CDN for Folder Icon -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 40px;
+            background-color: #f5f5f5;
+        }
+
+        form {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            max-width: 700px;
+            margin: auto;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+
+        label {
+            display: block;
+            margin-top: 15px;
+        }
+
+        input,
+        textarea,
+        select,
+        button {
+            width: 100%;
+            padding: 10px;
+            margin-top: 5px;
+            border-radius: 4px;
+            border: 1px solid #ccc;
+        }
+
+        .button-group {
+            display: flex;
+            justify-content: space-between;
+            gap: 10px;
+        }
+
+        button {
+            padding: 12px;
+            margin-top: 20px;
+            cursor: pointer;
+        }
+
+        button[type="submit"] {
+            background-color: #28a745;
+            color: white;
+            border: none;
+        }
+
+        button[type="button"] {
+            background-color: #dc3545;
+            color: white;
+            border: none;
+        }
+
+        progress {
+            width: 100%;
+            height: 20px;
+            margin-top: 15px;
+        }
+
+        #responseBox {
+            margin-top: 20px;
+            display: none;
+            border-radius: 4px;
+            padding: 20px;
+            white-space: normal;
+        }
+
+        .response-success {
+            background-color: #e9f7ef;
+            border-left: 5px solid #28a745;
+        }
+
+        .response-error {
+            background-color: #f8d7da;
+            border-left: 5px solid #dc3545;
+        }
+
+        .response-warning {
+            background-color: #fff3cd;
+            border-left: 5px solid #ffc107;
+        }
+
+        .responseBox table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+
+        .responseBox th,
+        .responseBox td {
+            text-align: left;
+            padding: 6px 10px;
+        }
+
+        .responseBox th {
+            width: 30%;
+            font-weight: bold;
+        }
+
+        .responseBox tr:nth-child(even) {
+            background-color: #f9f9f9;
+        }
+
+        /* Drag and Drop Area */
+        #dropArea {
+            border: 2px dashed #ccc;
+            border-radius: 4px;
+            padding: 30px;
+            text-align: center;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        #dropArea.dragover {
+            border-color: #28a745;
+            background-color: #f7fff7;
+        }
+
+        #dropArea p {
+            margin: 0;
+            font-size: 18px;
+            color: #666;
+        }
+
+        #dropArea i {
+            font-size: 50px;
+            color: #28a745;
+        }
+
+        #dropArea p,
+        #dropArea i {
+            margin: 10px 0;
+        }
+
+        /* File details container */
+        #fileDetails {
+            margin-top: 10px;
+            font-size: 14px;
+            color: #555;
+        }
+
+        #fileDetails span {
+            display: block;
+            margin: 5px 0;
+        }
+
+        /* Content Type display */
+        #contentType {
+            font-size: 14px;
+            margin-top: 10px;
+            font-weight: bold;
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.4);
+            padding-top: 60px;
+        }
+
+        .modal-content {
+            background-color: #fefefe;
+            margin: 5% auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 80%;
+            max-width: 500px;
+            border-radius: 8px;
+        }
+
+        .modal-header,
+        .modal-footer {
+            text-align: center;
+        }
+
+        .modal-header {
+            font-size: 18px;
+            font-weight: bold;
+        }
+
+        .modal-footer {
+            margin-top: 20px;
+        }
+
+        .modal-progress {
+            width: 100%;
+            height: 20px;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h2 style="text-align: center;">DeepFake Detection<br><span
+            style="font-family: 'Arial', sans-serif; font-size: 24px;">Upload with Drag & Drop</span>
+    </h2>
+
+    <form id="uploadForm">
+        <label for="file">Media File</label>
+
+        <!-- Drag and Drop Area with Folder Icon -->
+        <div id="dropArea">
+            <i class="fas fa-folder"></i> <!-- Folder Icon -->
+            <p>Drag & Drop your file here or click to select</p>
+            <input type="file" id="file" name="file" style="display: none;" required>
+        </div>
+
+        <!-- File Details Display -->
+        <div id="fileDetails" style="display: none;">
+            <span><strong>File Name:</strong> <span id="fileName"></span></span>
+            <span><strong>File Type:</strong> <span id="fileType"></span></span>
+            <span><strong>File Size:</strong> <span id="fileSize"></span></span>
+        </div>
+
+        <!-- Content Type Display -->
+        <div id="contentType" style="display: none;"></div>
+
+        <label for="wa_message_id">WA Message ID</label>
+        <input type="text" id="wa_message_id" name="wa_message_id" required>
+
+        <label for="sender">Sender</label>
+        <input type="text" id="sender" name="sender" required>
+
+        <label for="receiver">Receiver</label>
+        <input type="text" id="receiver" name="receiver" required>
+
+        <label for="timestamp">Timestamp (in ms)</label>
+        <input type="text" id="timestamp" name="timestamp" required>
+
+        <!-- <label for="context_id">Context ID</label>
+        <input type="text" id="context_id" name="context_id"> -->
+
+        <label for="is_forwarded">Is Forwarded</label>
+        <select id="is_forwarded" name="is_forwarded">
+            <option value="false">False</option>
+            <option value="true">True</option>
+        </select>
+
+        <label for="content">Content</label>
+        <textarea id="content" name="content" rows="4" required>This is test message</textarea>
+
+        <div class="button-group">
+            <button type="submit">Upload</button>
+            <button type="button" onclick="resetForm()">Clear</button>
+        </div>
+
+        <div id="responseBox" class="responseBox"></div>
+    </form>
+
+    <!-- Modal Dialog -->
+    <div id="uploadModal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h2>Uploading Media...</h2>
+            </div>
+            <div class="modal-body">
+                <progress id="uploadProgress" class="modal-progress" value="0" max="100"></progress>
+                <p id="uploadStatus">Starting upload...</p>
+            </div>
+            <div class="modal-footer">
+                <button onclick="closeModal()">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Helper to generate random values
+        function getRandomString(length = 8) {
+            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+            let result = '';
+            for (let i = 0; i < length; i++) {
+                result += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return result;
+        }
+        function getRandomName() {
+            const names = ['Kamal', 'Amit', 'Priya', 'Ravi', 'Anjali', 'Deepak', 'Sneha', 'Vikas', 'Neha', 'Rahul'];
+            return names[Math.floor(Math.random() * names.length)] + '-Test' + Math.floor(Math.random() * 100);
+        }
+
+        function autofillRandom() {
+            document.getElementById('wa_message_id').value = getRandomString(12);
+            const sender = getRandomName();
+            const receiver = getRandomName();
+            document.getElementById('sender').value = sender;
+            document.getElementById('receiver').value = receiver;
+            document.getElementById('content').value = 'This is a test message ' + getRandomString(5);
+            document.getElementById('timestamp').value = Date.now().toString();
+        }
+
+        // Auto-fill current timestamp and random values
+        document.addEventListener('DOMContentLoaded', function () {
+            autofillRandom();
+        });
+
+        // Reset the form
+        function resetForm() {
+            document.getElementById('uploadForm').reset();
+            autofillRandom();
+            const responseBox = document.getElementById('responseBox');
+            responseBox.style.display = 'none';
+            responseBox.innerHTML = '';
+            responseBox.className = 'responseBox';
+            document.getElementById('fileDetails').style.display = 'none';
+            document.getElementById('fileName').textContent = '';
+            document.getElementById('fileType').textContent = '';
+            document.getElementById('fileSize').textContent = '';
+            document.getElementById('contentType').style.display = 'none';
+        }
+
+        // Show the upload modal
+        function showModal() {
+            document.getElementById('uploadModal').style.display = 'block';
+        }
+
+        // Close the upload modal
+        function closeModal() {
+            document.getElementById('uploadModal').style.display = 'none';
+        }
+
+        // Drag-and-drop event listeners
+        const dropArea = document.getElementById('dropArea');
+        const fileInput = document.getElementById('file');
+        const fileDetails = document.getElementById('fileDetails');
+        const fileName = document.getElementById('fileName');
+        const fileType = document.getElementById('fileType');
+        const fileSize = document.getElementById('fileSize');
+        const contentTypeDisplay = document.getElementById('contentType');
+
+        dropArea.addEventListener('click', () => fileInput.click());
+        dropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropArea.classList.add('dragover');
+        });
+
+        dropArea.addEventListener('dragleave', () => {
+            dropArea.classList.remove('dragover');
+        });
+
+        dropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropArea.classList.remove('dragover');
+            const file = e.dataTransfer.files[0];
+            if (file) {
+                fileInput.files = e.dataTransfer.files;
+                updateFileDetails(file);
+            }
+        });
+
+        // Update file details when file is selected
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) {
+                updateFileDetails(file);
+            }
+        });
+
+        // Display file details
+        function updateFileDetails(file) {
+            fileName.textContent = file.name;
+            fileType.textContent = file.type;
+            fileSize.textContent = (file.size / 1024).toFixed(2) + ' KB';  // Display in KB
+            fileDetails.style.display = 'block';
+
+            // Automatically infer content type based on the file MIME type
+            const contentType = getContentType(file.type);
+            contentTypeDisplay.textContent = 'Content Type: ' + contentType;
+            contentTypeDisplay.style.display = 'block';
+        }
+
+        // Function to determine the content type
+        function getContentType(mimeType) {
+            if (mimeType.startsWith('image/')) return 'Image';
+            if (mimeType.startsWith('video/')) return 'Video';
+            if (mimeType === 'application/pdf') return 'PDF';
+            if (mimeType === 'application/json') return 'Location';
+            return 'Document';
+        }
+
+        // Add a loading dialog/modal for refresh
+        function createRefreshLoadingDialog() {
+            const dialog = document.createElement('div');
+            dialog.id = 'refreshLoadingDialog';
+            dialog.style.display = 'none';
+            dialog.style.position = 'fixed';
+            dialog.style.top = '0';
+            dialog.style.left = '0';
+            dialog.style.width = '100vw';
+            dialog.style.height = '100vh';
+            dialog.style.background = 'rgba(0,0,0,0.3)';
+            dialog.style.zIndex = '9999';
+            dialog.style.display = 'flex';
+            dialog.style.alignItems = 'center';
+            dialog.style.justifyContent = 'center';
+            dialog.innerHTML = '<div style="background: white; padding: 30px 40px; border-radius: 8px; font-size: 20px; box-shadow: 0 0 10px #888; text-align: center;">🔄 Fetching latest details...</div>';
+            document.body.appendChild(dialog);
+            return dialog;
+        }
+        // Remove any dialog creation on page load
+        // Replace with these functions:
+        function showRefreshLoading() {
+            let dialog = document.getElementById('refreshLoadingDialog');
+            if (!dialog) {
+                dialog = document.createElement('div');
+                dialog.id = 'refreshLoadingDialog';
+                dialog.style.position = 'fixed';
+                dialog.style.top = '0';
+                dialog.style.left = '0';
+                dialog.style.width = '100vw';
+                dialog.style.height = '100vh';
+                dialog.style.background = 'rgba(0,0,0,0.3)';
+                dialog.style.zIndex = '9999';
+                dialog.style.display = 'flex';
+                dialog.style.alignItems = 'center';
+                dialog.style.justifyContent = 'center';
+                dialog.innerHTML = '<div style="background: white; padding: 30px 40px; border-radius: 8px; font-size: 20px; box-shadow: 0 0 10px #888; text-align: center;">🔄 Fetching latest details...</div>';
+                document.body.appendChild(dialog);
+            } else {
+                dialog.style.display = 'flex';
+            }
+        }
+        function hideRefreshLoading() {
+            const dialog = document.getElementById('refreshLoadingDialog');
+            if (dialog) {
+                dialog.parentNode.removeChild(dialog);
+            }
+        }
+
+        // Handle form submission
+        document.getElementById('uploadForm').addEventListener('submit', function (event) {
+            event.preventDefault();
+
+            const form = event.target;
+            const formData = new FormData(form);
+            const xhr = new XMLHttpRequest();
+            const progressBar = document.getElementById('uploadProgress');
+            const uploadStatus = document.getElementById('uploadStatus');
+            const responseBox = document.getElementById('responseBox');
+
+            // Show the modal dialog
+            showModal();
+
+            xhr.open('POST', 'https://52.5.204.108:7445/api/messages', true);
+
+            progressBar.value = 0;
+            uploadStatus.textContent = 'Starting upload...';
+
+            xhr.upload.onprogress = function (e) {
+                if (e.lengthComputable) {
+                    const percent = (e.loaded / e.total) * 100;
+                    progressBar.value = percent;
+                    uploadStatus.textContent = `Uploading... ${percent.toFixed(2)}%`;
+                }
+            };
+
+            xhr.onload = function () {
+                closeModal();
+                responseBox.style.display = 'block';
+
+                try {
+                    const response = JSON.parse(xhr.responseText);
+                    const data = response.data;
+
+                    responseBox.classList.add('response-success');
+                    responseBox.innerHTML = `
+            <strong>✅ ${response.message}</strong><br><br>
+            <table id="resultTable">
+              <tr><th>Message ID</th><td id="msgIdCell">${data.id}</td></tr>
+              <tr><th>Sender</th><td id="senderCell">${data.sender}</td></tr>
+              <tr><th>Receiver</th><td id="receiverCell">${data.receiver}</td></tr>
+              <tr><th>Timestamp</th><td id="timestampCell">${data.timestamp}</td></tr>
+              <tr><th>Content Type</th><td id="contentTypeCell">${data.content_type}</td></tr>
+              <tr><th>Content</th><td id="contentCell">${data.content}</td></tr>
+              <tr><th>Is Forwarded</th><td id="isForwardedCell">${data.is_forwarded}</td></tr>
+              <tr><th>Media Filename</th><td id="mediaFilenameCell">${data.media_filename}</td></tr>
+              <tr><th>Media Size</th><td id="mediaSizeCell">${data.media_size_bytes.toLocaleString()} bytes</td></tr>
+              <tr><th>Media MIME</th><td id="mediaMimeCell">${data.media_mime_type}</td></tr>
+              <tr><th>Media URL</th><td id="mediaUrlCell"><a href="${data.media_s3_url}" target="_blank">View Media</a></td></tr>
+              <tr><th>Status</th><td id="statusCell">${data.status} <button id="refreshStatusBtn" type="button" style="background-color:#28a745;color:white;border:none;padding:6px 14px;border-radius:4px;cursor:pointer;"><i class='fas fa-sync-alt' style='color:white;'></i> Refresh</button></td></tr>
+              <tr><th>Score</th><td id="scoreCell">${data.deepfake_score !== undefined && data.deepfake_score !== null ? data.deepfake_score : '-'}</td></tr>
+              <tr><th>Deepfake Summary</th><td id="deepfakeSummaryCell">${data.deepfake_summary || '-'}</td></tr>
+              <tr><th>Created At</th><td id="createdAtCell">${new Date(data.createdAt).toLocaleString()}</td></tr>
+              <tr><th>Updated At</th><td id="updatedAtCell">${new Date(data.updatedAt).toLocaleString()}</td></tr>
+            </table>
+`;
+
+                    function updateTableWithMessage(msg) {
+                        document.getElementById('senderCell').textContent = msg.sender;
+                        document.getElementById('receiverCell').textContent = msg.receiver;
+                        document.getElementById('timestampCell').textContent = msg.timestamp;
+                        document.getElementById('contentTypeCell').textContent = msg.content_type;
+                        document.getElementById('contentCell').textContent = msg.content;
+                        document.getElementById('isForwardedCell').textContent = msg.is_forwarded;
+                        document.getElementById('mediaFilenameCell').textContent = msg.media_filename;
+                        document.getElementById('mediaSizeCell').textContent = msg.media_size_bytes ? msg.media_size_bytes.toLocaleString() + ' bytes' : '-';
+                        document.getElementById('mediaMimeCell').textContent = msg.media_mime_type;
+                        document.getElementById('mediaUrlCell').innerHTML = `<a href="${msg.media_s3_url}" target="_blank">View Media</a>`;
+                        document.getElementById('statusCell').innerHTML = `${msg.status} <button id=\"refreshStatusBtn\" type=\"button\" style=\"background-color:#28a745;color:white;border:none;padding:6px 14px;border-radius:4px;cursor:pointer;\"><i class='fas fa-sync-alt' style='color:white;'></i> Refresh</button>`;
+                        document.getElementById('scoreCell').textContent = (msg.deepfake_score !== undefined && msg.deepfake_score !== null) ? msg.deepfake_score : '-';
+                        document.getElementById('deepfakeSummaryCell').textContent = msg.deepfake_summary || '-';
+                        document.getElementById('createdAtCell').textContent = new Date(msg.createdAt).toLocaleString();
+                        document.getElementById('updatedAtCell').textContent = new Date(msg.updatedAt).toLocaleString();
+                        // Re-attach handler for the new button
+                        document.getElementById('refreshStatusBtn').onclick = refreshBtnHandler;
+                    }
+
+                    function refreshBtnHandler() {
+                        const msgId = document.getElementById('msgIdCell').textContent;
+                        showRefreshLoading();
+                        fetch(`https://52.5.204.108:7445/api/messages/${msgId}`)
+                            .then(res => res.json())
+                            .then(msg => {
+                                updateTableWithMessage(msg);
+                            })
+                            .finally(() => {
+                                hideRefreshLoading();
+                            });
+                    }
+
+                    // Attach handler after upload
+                    const refreshBtn = document.getElementById('refreshStatusBtn');
+                    if (refreshBtn) {
+                        refreshBtn.onclick = refreshBtnHandler;
+                    }
+
+                    // Auto-refresh the table once after upload
+                    setTimeout(() => {
+                        refreshBtnHandler();
+                    }, 2000);
+
+                } catch (e) {
+                    responseBox.classList.add('response-warning');
+                    responseBox.innerHTML = '<strong>⚠️ Upload succeeded, but response was not in expected format:</strong><br><pre>' + xhr.responseText + '</pre>';
+                }
+            };
+
+            xhr.onerror = function () {
+                closeModal();
+                responseBox.style.display = 'block';
+                responseBox.classList.add('response-error');
+                responseBox.innerHTML = '<strong>❌ Failed to connect to the server.</strong>';
+            };
+
+            xhr.send(formData);
+        });
+    </script>
+
+</body>
+
+</html>
