@@ -458,7 +458,7 @@
             // Show the modal dialog
             showModal();
 
-            xhr.open('POST', 'https://52.5.204.108:7445/api/messages', true);
+            xhr.open('POST', 'https://api.factchecks.io/api/messages', true);
 
             progressBar.value = 0;
             uploadStatus.textContent = 'Starting upload...';
@@ -525,7 +525,7 @@
                     function refreshBtnHandler() {
                         const msgId = document.getElementById('msgIdCell').textContent;
                         showRefreshLoading();
-                        fetch(`https://52.5.204.108:7445/api/messages/${msgId}`)
+                        fetch(`https://api.factchecks.io/api/messages/${msgId}`)
                             .then(res => res.json())
                             .then(msg => {
                                 updateTableWithMessage(msg);
