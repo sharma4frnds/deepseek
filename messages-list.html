@@ -103,7 +103,7 @@
 
     <script>
         let currentPage = 1;
-        const apiUrl = "https://52.5.204.108:7445/api/messages";
+        const apiUrl = "https://api.factchecks.io/api/messages";
 
         async function fetchMessages(page = 1) {
             const loadingEl = document.getElementById("loading");
@@ -233,7 +233,7 @@
             openStatusPopup();
             document.getElementById('closeStatusPopupBtn').onclick = closeStatusPopup;
             // Fetch latest details from API
-            fetch(`https://52.5.204.108:7445/api/messages/${msg.id}`)
+            fetch(`https://api.factchecks.io/api/messages/${msg.id}`)
                 .then(res => res.json())
                 .then(latest => {
                     content.innerHTML = `
