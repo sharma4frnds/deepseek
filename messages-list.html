@@ -155,7 +155,7 @@
           <td>${msg.media_size_bytes ? (msg.media_size_bytes / 1024).toFixed(1) + " KB" : "-"}</td>
           <td><span class="status-badge status-${msg.status}">${msg.status || "Pending"}</span></td>
           <td>${msg.deepfake_result ?? "-"}</td>
-          <td>${msg.deepfake_summary ?? "-"}</td>
+          <td>${formatSummary(msg.deepfake_summary)}</td>
           <td>${msg.deepfake_score !== null && msg.deepfake_score !== undefined ? msg.deepfake_score.toFixed(2) : "-"}</td>
           <td>${msg.error_message || "-"}</td>
           <td>${new Date(msg.createdAt).toLocaleString()}</td>
@@ -218,6 +218,15 @@
             document.body.style.overflow = '';
         }
 
+        // Utility to format summary with newlines and bullets
+        function formatSummary(text) {
+            if (!text) return '-';
+            // Replace \n with <br> and \u2022 with bullet
+            return text
+                .replace(/\n/g, '<br>')
+                .replace(/\u2022|•/g, '<span style="display:inline-block;width:1em;">&bull;</span>');
+        }
+
         // Update showStatusPopup to use openStatusPopup/closeStatusPopup
         function showStatusPopup(msg) {
             // Show loading while fetching
@@ -249,7 +258,7 @@
             <tr><th style='text-align:left;'>Receiver</th><td>${latest.receiver}</td></tr>
             <tr><th style='text-align:left;'>Status</th><td><span class=\"status-badge status-${latest.status}\">${latest.status}</span></td></tr>
             <tr><th style='text-align:left;'>Score</th><td>${latest.deepfake_score !== null && latest.deepfake_score !== undefined ? latest.deepfake_score : '-'}</td></tr>
-            <tr><th style='text-align:left;'>Deepfake Summary</th><td>${latest.deepfake_summary || '-'}</td></tr>
+            <tr><th style='text-align:left;'>Deepfake Summary</th><td>${formatSummary(latest.deepfake_summary) || '-'}</td></tr>
             <tr><th style='text-align:left;'>Content</th><td>${latest.content || '-'}</td></tr>
             <tr><th style='text-align:left;'>Content Type</th><td>${latest.content_type || '-'}</td></tr>
             <tr><th style='text-align:left;'>Media Filename</th><td>${latest.media_filename || '-'}</td></tr>
