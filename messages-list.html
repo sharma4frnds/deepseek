@@ -223,8 +223,11 @@
             if (!text) return '-';
             // Replace \n with <br> and \u2022 with bullet
             return text
-                .replace(/\n/g, '<br>')
-                .replace(/\u2022|•/g, '<span style="display:inline-block;width:1em;">&bull;</span>');
+                .replace(/\n\n/g, '<br><br>') // double newline = double break
+                .replace(/\n/g, '<br>') // single newline = single break
+                .replace(/\u2022|•/g, '<span style="display:inline-block;width:1em;">&bull;</span>')
+                .replace(/(Technical Analysis:)/g, '<b>$1</b>')
+                .replace(/(Model Details:)/g, '<b>$1</b>');
         }
 
         // Update showStatusPopup to use openStatusPopup/closeStatusPopup
